@@ -1,65 +1,304 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import axios from "axios";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Youtube, Download, Loader2, PlayCircle, User, AlertCircle } from "lucide-react";
+
+interface Format {
+  qualityLabel?: string;
+  url: string;
+  mimeType: string;
+  itag?: number;
+  extension?: string;
+}
+
+interface VideoDetails {
+  thumbnail: string;
+  title: string;
+  channel: string;
+  duration: string;
+  formats: Format[];
+}
 
 export default function Home() {
+  const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
+  const [selectedFormatIndex, setSelectedFormatIndex] = useState<string>("0");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConvert = async () => {
+    if (!url) return;
+    
+    // Simple validation for YouTube URL
+    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+      setError("Please enter a valid YouTube URL");
+      return;
+    }
+
+    setIsLoading(true);
+    setVideoDetails(null);
+    setSelectedFormatIndex("0");
+    setError(null);
+
+    try {
+      const response = await axios.post("/api/convert", { url });
+      setVideoDetails(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to fetch video details. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    const index = parseInt(selectedFormatIndex);
+    if (!videoDetails || !videoDetails.formats[index]) return;
+    setIsDownloading(true);
+
+    try {
+      const format = videoDetails.formats[index];
+      const ext = format.extension || (format.mimeType.includes("audio") ? "mp3" : "mp4");
+      const filename = `${videoDetails.title || 'video'}.${ext}`;
+      
+      // Use our internal download proxy
+      const downloadUrl = `/api/download?url=${encodeURIComponent(format.url)}&filename=${encodeURIComponent(filename)}`;
+      
+      // Use a hidden anchor with download attribute to help browser manage it
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      // Use target _self to avoid extra tabs, but still trigger the download header
+      a.target = '_self'; 
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+    } catch (err) {
+      console.error("Download error:", err);
+      setError("Failed to start download. Please try another format.");
+    } finally {
+      // Keep loading state for a bit to show feedback
+      setTimeout(() => setIsDownloading(false), 2000);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-background py-8 px-4 md:py-16">
+      <div className="mx-auto w-full max-w-2xl space-y-8">
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-2">
+            <Youtube className="w-12 h-12 text-red-600" />
+            <h1 className="text-4xl font-bold tracking-tight">YT x Downloader</h1>
+          </div>
+          <p className="text-muted-foreground text-lg">
+            Fast, simple, and professional YouTube video converter.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Input
+                type="url"
+                placeholder="Paste YouTube URL here..."
+                className={`h-12 bg-card border-border pr-10 ${error ? 'border-destructive' : ''}`}
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (error) setError(null);
+                }}
+              />
+            </div>
+            <Button 
+              size="lg" 
+              className="h-12 px-8 font-semibold"
+              onClick={handleConvert}
+              disabled={isLoading || !url}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Convert"
+              )}
+            </Button>
+          </div>
+          
+          {error && (
+            <div className="flex items-center gap-2 text-destructive text-sm px-1 animate-in fade-in slide-in-from-top-1">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+
+        {isLoading && (
+          <Card className="border-border bg-card overflow-hidden shadow-sm animate-pulse">
+            <CardContent className="p-0">
+              <div className="flex flex-col md:flex-row min-h-0">
+                <Skeleton className="w-full md:w-72 aspect-video shrink-0" />
+                <div className="p-5 flex-1 flex flex-col space-y-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
+                  <div className="mt-auto space-y-3">
+                    <Skeleton className="h-9 w-full" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Skeleton className="h-9 w-full" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {videoDetails && !isLoading && (
+          <Card className="border-border bg-card overflow-hidden shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CardContent className="p-0">
+              <div className="flex flex-col md:flex-row min-h-0">
+                {/* Thumbnail Section */}
+                <div className="relative w-full md:w-72 aspect-video bg-muted shrink-0 border-b md:border-b-0 md:border-r border-border">
+                  <img
+                    src={videoDetails.thumbnail}
+                    alt={videoDetails.title}
+                    className="object-cover w-full h-full"
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+                    {videoDetails.duration}
+                  </div>
+                </div>
+
+                {/* Content Section */}
+                <div className="p-5 flex-1 flex flex-col min-w-0">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold line-clamp-2 leading-snug mb-1 text-foreground">
+                      {videoDetails.title}
+                    </h3>
+                    <div className="flex items-center text-muted-foreground text-xs font-medium">
+                      <User className="w-3 h-3 mr-1.5 shrink-0" />
+                      <span className="truncate">{videoDetails.channel}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-auto space-y-3">
+                    <div className="w-full">
+                      <Select value={selectedFormatIndex} onValueChange={(val) => val && setSelectedFormatIndex(val)}>
+                        <SelectTrigger className="w-full bg-secondary/30 border-border h-9 text-sm focus:ring-0">
+                          {videoDetails && videoDetails.formats[parseInt(selectedFormatIndex)] ? (
+                            <div className="flex items-center gap-2 truncate">
+                              {videoDetails.formats[parseInt(selectedFormatIndex)].mimeType.includes("audio") ? (
+                                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter shrink-0 border border-blue-500/30 px-1 rounded-sm leading-none py-0.5 min-w-[36px] text-center bg-blue-500/10">
+                                  Audio
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter shrink-0 border border-red-500/30 px-1 rounded-sm leading-none py-0.5 min-w-[36px] text-center bg-red-500/10">
+                                  Video
+                                </span>
+                              )}
+                              <span className="font-bold text-[10px] uppercase text-muted-foreground shrink-0">
+                                {videoDetails.formats[parseInt(selectedFormatIndex)].extension || (videoDetails.formats[parseInt(selectedFormatIndex)].mimeType.includes("audio") ? "MP3" : "MP4")}
+                              </span>
+                              <span className="font-medium truncate text-xs">
+                                {videoDetails.formats[parseInt(selectedFormatIndex)].qualityLabel}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Select Format</span>
+                          )}
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border max-h-60 overflow-y-auto">
+                          {videoDetails.formats.map((format, index) => {
+                            const isAudio = format.mimeType.includes("audio");
+                            return (
+                              <SelectItem key={index} value={index.toString()} className="cursor-pointer text-sm py-1.5 focus:bg-secondary/50">
+                                <div className="flex items-center gap-2">
+                                  {isAudio ? (
+                                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter shrink-0 border border-blue-500/30 px-1 rounded-sm leading-none py-0.5 min-w-[36px] text-center bg-blue-500/10">
+                                      Audio
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter shrink-0 border border-red-500/30 px-1 rounded-sm leading-none py-0.5 min-w-[36px] text-center bg-red-500/10">
+                                      Video
+                                    </span>
+                                  )}
+                                  <span className="font-bold text-[10px] uppercase text-muted-foreground shrink-0 w-8">
+                                    {format.extension || (isAudio ? "MP3" : "MP4")}
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {format.qualityLabel}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 text-xs font-semibold" 
+                        onClick={() => window.open(url, '_blank')}
+                      >
+                        <PlayCircle className="w-3.5 h-3.5 mr-1.5" />
+                        Preview
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="h-9 text-xs font-bold" 
+                        onClick={handleDownload}
+                        disabled={isDownloading || !videoDetails.formats[parseInt(selectedFormatIndex)]}
+                      >
+                        {isDownloading ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="pt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">High Quality</div>
+            <p>Download in 1080p, 4K and more.</p>
+          </div>
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">Fast Processing</div>
+            <p>Convert videos in seconds.</p>
+          </div>
+          <div className="space-y-2">
+            <div className="font-medium text-foreground">Free Converter</div>
+            <p>Convert and download without any limits.</p>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
