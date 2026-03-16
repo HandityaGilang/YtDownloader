@@ -295,6 +295,11 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Watermark */}
+      <div className="fixed bottom-4 right-4 text-muted-foreground/30 text-sm font-bold pointer-events-none select-none z-50">
+        @HandityaGilang
+      </div>
     </main>
   );
 }
