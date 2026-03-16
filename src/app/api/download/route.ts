@@ -11,33 +11,39 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Use native fetch for better compatibility with Web Streams in Next.js
-    const response = await fetch(url, {
+    // Use axios for better stream handling and compatibility
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'stream',
+      // Do not set a custom User-Agent as it might trigger bot detection
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'Accept': '*/*',
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`External API responded with ${response.status}`);
+    const headers: Record<string, string> = {
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+      'Content-Type': response.headers['content-type'] || 'application/octet-stream',
+      'Cache-Control': 'no-cache',
+    };
+    
+    const contentLength = response.headers['content-length'];
+    if (contentLength) {
+      headers['Content-Length'] = contentLength;
     }
 
-    // Return the body as a readable stream with Content-Length to show progress
-    return new Response(response.body, {
-      headers: {
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-        'Content-Type': response.headers.get('content-type') || 'application/octet-stream',
-        'Content-Length': response.headers.get('content-length') || '',
-        'Cache-Control': 'no-cache',
-      },
+    // Return the stream directly
+    return new Response(response.data, {
+      headers,
     });
   } catch (error: any) {
-    console.error('Download Proxy Error:', error.message);
-    // Return a more descriptive error to help debugging
+    const message = error.response?.statusText || error.message;
+    console.error('Download Proxy Error:', message);
     return NextResponse.json({ 
       error: 'Failed to proxy download', 
-      message: error.message,
-      status: error.status || 500
+      message,
+      status: error.response?.status || 500
     }, { status: 500 });
   }
 }

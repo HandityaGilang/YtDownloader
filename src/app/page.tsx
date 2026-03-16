@@ -76,22 +76,18 @@ export default function Home() {
       // Use our internal download proxy
       const downloadUrl = `/api/download?url=${encodeURIComponent(format.url)}&filename=${encodeURIComponent(filename)}`;
       
-      // Use a hidden anchor with download attribute to help browser manage it
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      // Use target _self to avoid extra tabs, but still trigger the download header
-      a.target = '_self'; 
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-    } catch (err) {
+      // Trigger download directly via window location
+      // This avoids buffering the whole file in memory (which caused the "loading" delay)
+      // and lets the browser handle the stream immediately.
+      window.location.href = downloadUrl;
+
+      // We can't detect when a direct download finishes, so we reset the state after a short delay
+      setTimeout(() => setIsDownloading(false), 3000);
+
+    } catch (err: any) {
       console.error("Download error:", err);
       setError("Failed to start download. Please try another format.");
-    } finally {
-      // Keep loading state for a bit to show feedback
-      setTimeout(() => setIsDownloading(false), 2000);
+      setIsDownloading(false);
     }
   };
 
