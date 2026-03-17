@@ -78,33 +78,31 @@ export default function Home() {
       const ext = format.extension || (format.mimeType.includes("audio") ? "mp3" : "mp4");
       const filename = `${videoDetails.title || 'video'}.${ext}`;
       
-      // Use our internal download proxy
       const downloadUrl = `/api/download?url=${encodeURIComponent(format.url)}&filename=${encodeURIComponent(filename)}`;
       
-      // First, try a background fetch to check if the proxy works
-      const checkResponse = await fetch(downloadUrl, { method: 'HEAD' });
+      // Try a quick fetch to see if the proxy is allowed
+      const response = await fetch(downloadUrl);
       
-      if (checkResponse.status === 403) {
-        // Proxy is blocked by YouTube's IP restriction
-        const errorData = await checkResponse.json();
+      if (response.status === 403) {
         setDirectDownloadUrl(format.url);
-        setError("Direct download required due to IP restriction.");
+        setError("Proxy blocked by YouTube. Please use the direct link below.");
         setIsDownloading(false);
         return;
       }
 
-      // If HEAD check passed or was 200, trigger the actual download
+      if (!response.ok) {
+        throw new Error("Proxy server error");
+      }
+
+      // If okay, trigger the download via window location
       window.location.href = downloadUrl;
-      
-      // We can't detect when a direct download finishes, so we reset the state after a short delay
       setTimeout(() => setIsDownloading(false), 3000);
 
     } catch (err: any) {
       console.error("Download error:", err);
-      // Fallback: If anything fails, provide the direct link
       const format = videoDetails.formats[index];
       setDirectDownloadUrl(format.url);
-      setError("Download failed. Please use the direct link below.");
+      setError("Connection issue. Please use the direct link below.");
       setIsDownloading(false);
     }
   };
@@ -166,15 +164,15 @@ export default function Home() {
                 {error}
               </div>
               {directDownloadUrl && (
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
-                  className="w-fit h-8 text-xs font-bold"
-                  onClick={() => window.open(directDownloadUrl, '_blank')}
+                <a 
+                  href={directDownloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 rounded-md text-xs font-bold w-fit transition-colors shadow-sm"
                 >
-                  <Download className="w-3 h-3 mr-1.5" />
+                  <Download className="w-3.5 h-3.5" />
                   Download Directly
-                </Button>
+                </a>
               )}
             </div>
           )}
