@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://ytxdownloader.biz.id'; 
+  const baseUrl = 'https://www.ytxdownloader.biz.id'; 
 
   return {
     rules: {

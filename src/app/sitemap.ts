@@ -1,14 +1,14 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://ytxdownloader.biz.id'; 
+  const baseUrl = 'https://www.ytxdownloader.biz.id'; 
 
   return [
     {
-      url: baseUrl,
-      lastModified: new Date(),
+      url: `${baseUrl}/`,
+      lastModified: '2026-03-17',
       changeFrequency: 'daily',
-      priority: 1,
+      priority: 1.0,
     },
   ];
 }
