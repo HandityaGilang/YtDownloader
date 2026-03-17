@@ -13,8 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "YT x Downloader - Fast & Professional",
-  description: "Download YouTube videos with ease in high quality.",
+  title: "YT x Downloader | Fast & Free YouTube Converter",
+  description: "Professional YouTube video and audio downloader by @HandityaGilang. High quality, no registration required.",
+  icons: {
+    icon: [
+      { url: "/Logo.png", sizes: "32x32" },
+      { url: "/Logo.png", sizes: "16x16" },
+    ],
+    apple: "/Logo.png",
+    shortcut: "/Logo.png",
+  },
 };
 
 export default function RootLayout({

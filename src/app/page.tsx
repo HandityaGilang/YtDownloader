@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Youtube, Download, Loader2, PlayCircle, User, AlertCircle } from "lucide-react";
+import Image from "next/image";
 
 interface Format {
   qualityLabel?: string;
@@ -95,8 +96,14 @@ export default function Home() {
     <main className="min-h-screen bg-background py-8 px-4 md:py-16">
       <div className="mx-auto w-full max-w-2xl space-y-8">
         <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-2">
-            <Youtube className="w-12 h-12 text-red-600" />
+          <div className="flex items-center justify-center space-x-3">
+            <Image 
+              src="/Logo.png" 
+              alt="YT x Downloader Logo" 
+              width={48} 
+              height={48} 
+              className="rounded-xl"
+            />
             <h1 className="text-4xl font-bold tracking-tight">YT x Downloader</h1>
           </div>
           <p className="text-muted-foreground text-lg">
