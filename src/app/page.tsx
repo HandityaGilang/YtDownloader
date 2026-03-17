@@ -39,6 +39,7 @@ export default function Home() {
   const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
   const [selectedFormatIndex, setSelectedFormatIndex] = useState<string>("0");
   const [error, setError] = useState<string | null>(null);
+  const [directDownloadUrl, setDirectDownloadUrl] = useState<string | null>(null);
 
   const handleConvert = async () => {
     if (!url) return;
@@ -53,6 +54,7 @@ export default function Home() {
     setVideoDetails(null);
     setSelectedFormatIndex("0");
     setError(null);
+    setDirectDownloadUrl(null);
 
     try {
       const response = await axios.post("/api/convert", { url });
@@ -68,6 +70,8 @@ export default function Home() {
     const index = parseInt(selectedFormatIndex);
     if (!videoDetails || !videoDetails.formats[index]) return;
     setIsDownloading(true);
+    setError(null);
+    setDirectDownloadUrl(null);
 
     try {
       const format = videoDetails.formats[index];
@@ -77,17 +81,30 @@ export default function Home() {
       // Use our internal download proxy
       const downloadUrl = `/api/download?url=${encodeURIComponent(format.url)}&filename=${encodeURIComponent(filename)}`;
       
-      // Trigger download directly via window location
-      // This avoids buffering the whole file in memory (which caused the "loading" delay)
-      // and lets the browser handle the stream immediately.
-      window.location.href = downloadUrl;
+      // First, try a background fetch to check if the proxy works
+      const checkResponse = await fetch(downloadUrl, { method: 'HEAD' });
+      
+      if (checkResponse.status === 403) {
+        // Proxy is blocked by YouTube's IP restriction
+        const errorData = await checkResponse.json();
+        setDirectDownloadUrl(format.url);
+        setError("Direct download required due to IP restriction.");
+        setIsDownloading(false);
+        return;
+      }
 
+      // If HEAD check passed or was 200, trigger the actual download
+      window.location.href = downloadUrl;
+      
       // We can't detect when a direct download finishes, so we reset the state after a short delay
       setTimeout(() => setIsDownloading(false), 3000);
 
     } catch (err: any) {
       console.error("Download error:", err);
-      setError("Failed to start download. Please try another format.");
+      // Fallback: If anything fails, provide the direct link
+      const format = videoDetails.formats[index];
+      setDirectDownloadUrl(format.url);
+      setError("Download failed. Please use the direct link below.");
       setIsDownloading(false);
     }
   };
@@ -143,9 +160,22 @@ export default function Home() {
           </div>
           
           {error && (
-            <div className="flex items-center gap-2 text-destructive text-sm px-1 animate-in fade-in slide-in-from-top-1">
-              <AlertCircle className="w-4 h-4" />
-              {error}
+            <div className="flex flex-col gap-3 px-1 animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center gap-2 text-destructive text-sm font-medium">
+                <AlertCircle className="w-4 h-4" />
+                {error}
+              </div>
+              {directDownloadUrl && (
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="w-fit h-8 text-xs font-bold"
+                  onClick={() => window.open(directDownloadUrl, '_blank')}
+                >
+                  <Download className="w-3 h-3 mr-1.5" />
+                  Download Directly
+                </Button>
+              )}
             </div>
           )}
         </div>

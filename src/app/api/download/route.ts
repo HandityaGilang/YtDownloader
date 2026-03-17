@@ -11,7 +11,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Attempt to fetch the media stream
+    // Attempt to fetch the media stream with minimal headers to avoid 403
+    // Some YouTube servers block requests that include Referer or Origin headers from a proxy
     const response = await axios({
       method: 'get',
       url: url,
@@ -19,12 +20,9 @@ export async function GET(request: Request) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Range': 'bytes=0-',
-        'Referer': 'https://www.youtube.com/',
-        'Origin': 'https://www.youtube.com/'
       },
-      timeout: 10000 // 10s timeout for the initial connection
+      timeout: 15000,
+      maxRedirects: 5
     });
 
     const headers: Record<string, string> = {
@@ -43,18 +41,19 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error('Download Proxy Error:', error.message);
     
-    // If the proxy fails with Forbidden (403), it usually means the YouTube server 
-    // requires the client's direct IP. In this case, we REDIRECT the browser 
-    // to the direct URL so the user still gets the file (even if it opens in a tab).
-    if (error.response?.status === 403 || error.response?.status === 401) {
-      console.log('Redirecting to direct URL due to 403/401');
-      return NextResponse.redirect(url);
+    // If the proxy still fails with 403, it means the URL is strictly IP-bound to the user.
+    // In this case, we return a 403 status so the frontend can handle the direct download fallback.
+    if (error.response?.status === 403) {
+      return NextResponse.json({ 
+        error: 'IP_RESTRICTED', 
+        message: 'This link is restricted to your IP. Use direct download.',
+        directUrl: url
+      }, { status: 403 });
     }
 
     return NextResponse.json({ 
       error: 'Failed to proxy download', 
-      message: error.message,
-      status: error.response?.status || 500
+      message: error.message
     }, { status: 500 });
   }
 }
