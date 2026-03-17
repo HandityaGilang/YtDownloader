@@ -329,6 +329,42 @@ export default function Home() {
             <p>Convert and download without any limits.</p>
           </div>
         </div>
+
+        {/* About Section */}
+        <div className="pt-16 pb-8 border-t border-border/50">
+          <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground text-sm leading-relaxed text-justify">
+            <h2 className="text-xl font-bold text-foreground text-center mb-8">About YT x Downloader</h2>
+            
+            <p>
+              Welcome to <strong>YT x Downloader</strong>, your premier destination for high-quality YouTube video and audio conversions. 
+              In an era where digital content is king, we understand the need for a reliable, fast, and completely free tool that helps 
+              you save your favorite moments for offline viewing or listening. Our platform is meticulously designed to provide a 
+              seamless user experience, stripping away the complexity often found in other conversion tools.
+            </p>
+
+            <p>
+              Whether you are looking to extract high-fidelity audio for your podcast collection or download high-definition 1080p 
+              videos for your next presentation, YT x Downloader has you covered. We support a wide array of formats, including 
+              crystal-clear <strong>MP3 bitrates up to 320kbps</strong> and crisp MP4 video quality. Our advanced backend processing 
+              ensures that your files are ready in seconds, utilizing high-speed proxy servers to deliver the data directly to your 
+              device without unnecessary delays or intrusive buffering.
+            </p>
+
+            <p>
+              Security and privacy are at the core of our philosophy. Developed by <strong>@HandityaGilang</strong>, YT x Downloader 
+              requires no registration, no subscriptions, and no personal data. We believe in an open web where tools should be 
+              accessible to everyone without barriers. Our "Free Converter" promise means you can download as much as you want, 
+              whenever you want, without ever hitting a paywall.
+            </p>
+
+            <p>
+              Using our tool is as simple as it gets: just paste your YouTube URL, select your preferred format and quality from 
+              our clean, color-coded dropdown, and hit convert. Our intelligent system handles the rest, providing you with a 
+              direct download link that respects your time and your device's storage. Thank you for choosing YT x Downloader—the 
+              fast, professional, and truly free way to manage your YouTube media.
+            </p>
+          </div>
+        </div>
       </div>
       
       {/* Watermark */}
