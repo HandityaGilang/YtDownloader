@@ -11,15 +11,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Use axios for better stream handling and compatibility
+    // Attempt to fetch the media stream
     const response = await axios({
       method: 'get',
       url: url,
       responseType: 'stream',
-      // Do not set a custom User-Agent as it might trigger bot detection
       headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': '*/*',
-      }
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Range': 'bytes=0-',
+        'Referer': 'https://www.youtube.com/',
+        'Origin': 'https://www.youtube.com/'
+      },
+      timeout: 10000 // 10s timeout for the initial connection
     });
 
     const headers: Record<string, string> = {
@@ -33,16 +38,22 @@ export async function GET(request: Request) {
       headers['Content-Length'] = contentLength;
     }
 
-    // Return the stream directly
-    return new Response(response.data, {
-      headers,
-    });
+    return new Response(response.data, { headers });
+
   } catch (error: any) {
-    const message = error.response?.statusText || error.message;
-    console.error('Download Proxy Error:', message);
+    console.error('Download Proxy Error:', error.message);
+    
+    // If the proxy fails with Forbidden (403), it usually means the YouTube server 
+    // requires the client's direct IP. In this case, we REDIRECT the browser 
+    // to the direct URL so the user still gets the file (even if it opens in a tab).
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      console.log('Redirecting to direct URL due to 403/401');
+      return NextResponse.redirect(url);
+    }
+
     return NextResponse.json({ 
       error: 'Failed to proxy download', 
-      message,
+      message: error.message,
       status: error.response?.status || 500
     }, { status: 500 });
   }
